@@ -1,0 +1,9 @@
+{
+  "name": "stock-heatmap",
+  "private": true,
+  "scripts": {
+    "api:local": "cd backend && ./gradlew :local:bootRun",
+    "refresh": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --refresh=${JOB:-all}\"",
+    "smoke": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --smoke\""
+  }
+}
