@@ -5,6 +5,9 @@ dependencies {
         // The adapter drags in WebFlux + Netty (~20 MB) for a local web-server mode we don't use.
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-webflux")
     }
+    // Lambda handler interfaces (RequestStreamHandler). The adapter marks this optional, but
+    // Lambda's Java runtime does not provide it: it must be inside our package.
+    implementation("com.amazonaws:aws-lambda-java-core:1.4.0")
     implementation("com.amazonaws:aws-lambda-java-events:3.16.1")
     implementation("software.amazon.awssdk:url-connection-client")
 }

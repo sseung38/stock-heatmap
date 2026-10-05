@@ -29,8 +29,9 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration(proxyBeanMethods = false)
 public class JobsConfiguration {
 
+  /** Named so it can't collide with Spring Cloud Function's own "jsonMapper" bean (a different type). */
   @Bean
-  JsonMapper jsonMapper() {
+  JsonMapper heatmapJsonMapper() {
     return JsonMapper.builder().build();
   }
 
