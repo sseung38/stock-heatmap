@@ -1,0 +1,27 @@
+[
+ {
+  "id": "binancecoin",
+  "symbol": "bnb",
+  "name": "BNB"
+ },
+ {
+  "id": "bitcoin",
+  "symbol": "btc",
+  "name": "Bitcoin"
+ },
+ {
+  "id": "ethereum",
+  "symbol": "eth",
+  "name": "Ethereum"
+ },
+ {
+  "id": "pepe",
+  "symbol": "pepe",
+  "name": "Pepe"
+ },
+ {
+  "id": "solana",
+  "symbol": "sol",
+  "name": "Solana"
+ }
+]

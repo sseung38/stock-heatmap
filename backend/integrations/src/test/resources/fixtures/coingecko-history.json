@@ -1,0 +1,10 @@
+{
+ "id": "bitcoin",
+ "symbol": "btc",
+ "name": "Bitcoin",
+ "market_data": {
+  "current_price": {
+   "usd": 87575.04615968224
+  }
+ }
+}
