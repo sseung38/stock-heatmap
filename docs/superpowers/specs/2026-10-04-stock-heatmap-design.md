@@ -70,7 +70,8 @@ non-US equities, mobile native app, automated end-to-end login tests.
   this keeps the server out of the live path.
 - Each unit has one job. Business logic lives in pure functions; Lambda handlers
   are thin glue so logic is testable and runnable locally.
-- Infrastructure is defined in AWS CDK (TypeScript). The whole repo is TypeScript.
+- Infrastructure is defined in AWS CDK (TypeScript). The backend is Java + Spring Boot
+  (§14.6); the web app and infrastructure are TypeScript.
 
 ## 3. Data sources (free tiers, verified 2026-10-04)
 
@@ -239,21 +240,25 @@ Clicking a tile opens a side panel. Footer: "Crypto data by CoinGecko".
 
 ```
 stock-heatmap/
-├── shared/          shared types: MarketData, WatchlistItem, Timeframe
-├── functions/
-│   ├── core/        pure logic (baselines, merge, validation, scrape parsing)
-│   ├── clients/     Alpaca, CoinGecko, Finnhub, Wikipedia wrappers
-│   └── handlers/    Lambda entry points (glue only)
+├── backend/         Java 21 + Spring Boot (Gradle multi-project, see §14.6)
+│   ├── core/        pure Java: JSON records, baselines, merge, validation, scrape parsing
+│   ├── integrations/ HTTP clients (Alpaca, CoinGecko, Coinbase, Finnhub, Wikipedia) and
+│   │                storage/secrets adapters (S3, DynamoDB, SSM, local files)
+│   ├── jobs/        refresh jobs and API services (plain classes, wired by @Configuration)
+│   ├── functions/   Spring Cloud Function app deployed to Lambda
+│   └── local/       Spring Boot web app: local mock API + refresh/smoke commands
+├── contract/        sample JSON files checked by both Java and TypeScript tests
+├── shared/          TypeScript types for the web app (MarketData, WatchlistItem, Timeframe)
 ├── web/             React app
 ├── infra/           AWS CDK app
 └── .github/workflows/
 ```
 
-npm workspaces; TypeScript everywhere.
+npm workspaces for `shared`, `web`, `infra`; Gradle (Kotlin DSL, wrapper) for `backend/`.
 
 **Local development**
 
-- `npm run refresh` — runs the refresh logic on the Mac, writing JSON to `.data/`.
+- `npm run refresh` — runs the refresh jobs on the Mac (Spring `local` profile), writing JSON to `.data/`.
 - `npm run dev` — Vite dev server against a local mock API that serves `.data/`
   (no AWS required). Live crypto still streams from Coinbase.
 
@@ -261,8 +266,8 @@ npm workspaces; TypeScript everywhere.
 
 | Level | Tool | Covers |
 |---|---|---|
-| Unit | Vitest | `computeChange`, `layoutTreemap`, baseline derivation (holidays, year boundary), merge + 90% rule, watchlist validation, Wikipedia parsing against saved HTML |
-| Client | Vitest + recorded fixtures | Each API client parses real recorded responses; no live calls |
+| Unit | JUnit 5 + AssertJ (backend), Vitest (web) | `computeChange`, `layoutTreemap`, baseline derivation (holidays, year boundary), merge + 90% rule, watchlist validation, Wikipedia parsing against saved HTML |
+| Client | `MockRestServiceServer` + recorded fixtures | Each API client parses real recorded responses; no live calls |
 | Live smoke | `npm run smoke` (manual) | One real call per external API to catch upstream changes |
 | Infrastructure | CDK assertions | Buckets private, IAM scoped as in §5.4, DynamoDB 1/1, alarms and budget exist |
 | Post-deploy | CD pipeline | CloudFront URL returns 200 with the new build; `GET /market-data` without a token returns 401 (authorizer active). No user credentials stored in CI |
@@ -349,3 +354,19 @@ These supersede the sections above where they conflict.
 4. **IAM:** `refresh-baselines` may also `GetObject` `crypto.json` (source of coin ids).
 5. **Runtime web config:** CDK writes `/config.json` (API URL, Cognito authority and
    client id) next to the site, so one web build works for every environment.
+6. **Backend in Java + Spring Boot (for learning).** All six Lambdas are Java 21 +
+   Spring Boot 4.1.x + Spring Cloud Function (Spring Cloud 2025.1.x), AWS SDK for Java v2,
+   Spring `RestClient`, jsoup.
+   - One deployment package, six Lambdas: handler
+     `org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest`; each
+     Lambda selects its bean with env `spring_cloud_function_definition`; `MAIN_CLASS` names
+     the Spring Boot application class. Packaged as an AWS-style zip (classes at the root,
+     dependencies in `lib/`), not a shaded JAR.
+   - Refresh jobs are `Function<Map<String, Object>, RefreshSummary>` beans; API endpoints
+     are `Function<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse>` beans.
+   - Spring profiles: `aws` (S3, DynamoDB, SSM) and `local` (`.data/` files, keys from `.env`).
+   - Lambdas: `java21`, `arm64`, 1024 MB, **SnapStart** on published versions; schedules and
+     API routes invoke the `live` alias. Secrets load lazily on first use (not into the snapshot).
+   - The TypeScript `shared` types remain for the web app; `contract/*.json` samples are
+     round-tripped by Java tests and type-checked by TypeScript tests to prevent drift.
+   - Estimated ~17k GB-s/month — within the 400k GB-s free tier, so still $0.
