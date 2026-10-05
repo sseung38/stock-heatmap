@@ -1,6 +1,7 @@
 {
   "name": "stock-heatmap",
   "private": true,
+  "type": "module",
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
@@ -8,11 +9,13 @@
     "dev": "concurrently -n api,web -c blue,green \"npm run api:local\" \"npm run dev -w web\"",
     "api:local": "cd backend && ./gradlew :local:bootRun",
     "refresh": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --refresh=${JOB:-all}\"",
-    "smoke": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --smoke\""
+    "smoke": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --smoke\"",
+    "build:backend": "cd backend && ./gradlew build :functions:lambdaZip"
   },
   "workspaces": [
     "shared",
-    "web"
+    "web",
+    "infra"
   ],
   "devDependencies": {
     "@eslint/js": "^10.0.1",
