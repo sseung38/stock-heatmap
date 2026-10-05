@@ -5,6 +5,11 @@ import { changeColor } from "./color";
 import { formatChange } from "./format";
 import { layoutTreemap } from "./layoutTreemap";
 
+/** Rough check that a label fits its tile (average glyph ≈ 0.62 em at this weight). */
+export function labelFits(label: string, fontSize: number, width: number): boolean {
+  return label.length * fontSize * 0.62 + 4 <= width;
+}
+
 /** Fallback size when the element can't be measured (e.g. tests without layout). */
 const DEFAULT_SIZE = { width: 1000, height: 600 };
 
@@ -52,7 +57,7 @@ export function Heatmap({ tiles, grouped, tf, onSelect }: { tiles: Tile[]; group
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect(tile)}
             >
               <rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} fill={changeColor(tile.change, tf)} />
-              {rect.w > 40 && rect.h > 24 && (
+              {rect.h > 24 && labelFits(tile.label, fontSize, rect.w) && (
                 <text x={rect.x + rect.w / 2} y={rect.y + rect.h / 2} textAnchor="middle" fontSize={fontSize}>
                   <tspan x={rect.x + rect.w / 2} dy="-0.2em" fontWeight={600}>{tile.label}</tspan>
                   <tspan x={rect.x + rect.w / 2} dy="1.2em" fontSize={fontSize * 0.75}>{change}</tspan>

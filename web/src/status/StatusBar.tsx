@@ -1,6 +1,6 @@
 import { formatEtTime, type StocksFile } from "@sh/shared";
 import type { StreamStatus } from "../crypto/useCryptoStream";
-import { stockStatus } from "./marketStatus";
+import { formatTradingDay, stockStatus } from "./marketStatus";
 
 /** @param crypto live-stream status, or null when there are no coins to stream */
 export function StatusBar({ stocks, crypto, isError }: { stocks: StocksFile | null; crypto: StreamStatus | null; isError: boolean }) {
@@ -8,7 +8,7 @@ export function StatusBar({ stocks, crypto, isError }: { stocks: StocksFile | nu
   return (
     <div className="status-bar">
       {status.kind === "ok" && <span>Stocks as of {formatEtTime(status.asOf)}</span>}
-      {status.kind === "closed" && <span>Market closed · as of {formatEtTime(status.asOf)}</span>}
+      {status.kind === "closed" && <span>Market closed · as of {formatTradingDay(status.tradingDay)} close</span>}
       {status.kind === "delayed" && (
         <span className="banner-delayed" role="status">Stock data delayed since {formatEtTime(status.since)}</span>
       )}
