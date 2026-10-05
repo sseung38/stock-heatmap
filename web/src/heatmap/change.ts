@@ -17,10 +17,15 @@ export function stockBaselineFor(quote: StockQuote, baseline: StockBaseline | un
     const lastYear = String(Number(quote.tradingDay.slice(0, 4)) - 1);
     return baseline.yearEndCloses[lastYear] ?? null;
   }
-  // Closes strictly before the quote's trading day.
-  const prior = quote.tradingDay > baseline.lastCloseDate ? baseline.closes : baseline.closes.slice(0, -1);
+  const prior = priorCloses(quote, baseline);
   const sessionsBack = tf === "1W" ? 5 : 21;
   return prior.length >= sessionsBack ? (prior[prior.length - sessionsBack] ?? null) : null;
+}
+
+/** Daily closes strictly before the quote's trading day, oldest first. */
+export function priorCloses(quote: StockQuote, baseline: StockBaseline | undefined): number[] {
+  if (!baseline) return [];
+  return quote.tradingDay > baseline.lastCloseDate ? baseline.closes : baseline.closes.slice(0, -1);
 }
 
 /** Rolling windows for crypto: the baseline is implied by CoinGecko's percent change at fetch time. */
