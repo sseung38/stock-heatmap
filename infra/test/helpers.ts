@@ -10,6 +10,7 @@ export function synth(): Template {
   const stack = new StockHeatmapStack(app, "TestStack", {
     env: { account: "123456789012", region: "us-east-1" },
     codePath: FIXTURE_ZIP,
+    alertEmail: "alerts@example.com",
   });
   return Template.fromStack(stack);
 }
