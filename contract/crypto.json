@@ -1,0 +1,13 @@
+{
+  "asOf": "2026-10-02T18:30:00Z",
+  "coins": {
+    "bitcoin": {
+      "symbol": "BTC", "name": "Bitcoin", "price": 98765.4, "change24h": 0.0123, "change7d": -0.034, "change30d": 0.081,
+      "marketCap": 1950000000000.0, "sparkline7d": [97000.5, 98000.25, 98765.4], "coinbaseProductId": "BTC-USD", "asOf": "2026-10-02T18:30:00Z"
+    },
+    "binancecoin": {
+      "symbol": "BNB", "name": "BNB", "price": 612.7, "change24h": -0.0051, "change7d": 0.012, "change30d": null,
+      "marketCap": 89000000000.0, "sparkline7d": [605.1, 610.0, 612.7], "coinbaseProductId": null, "asOf": "2026-10-02T18:30:00Z"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "asOf": "2026-10-02T18:35:00Z",
+  "market": { "isOpen": true },
+  "quotes": {
+    "AAPL": { "price": 227.52, "prevClose": 225.1, "volume": 51234567, "tradingDay": "2026-10-02", "asOf": "2026-10-02T18:20:01Z" },
+    "BRK.B": { "price": 461.3, "prevClose": 463.05, "volume": 3120456, "tradingDay": "2026-10-02", "asOf": "2026-10-02T18:19:58Z" }
+  }
+}

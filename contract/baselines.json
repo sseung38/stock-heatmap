@@ -1,0 +1,9 @@
+{
+  "asOf": "2026-10-01T21:00:03Z",
+  "stocks": {
+    "AAPL": { "closes": [220.5, 221.75, 225.1], "lastCloseDate": "2026-10-01", "yearEndCloses": { "2025": 250.42, "2026": 225.1 } }
+  },
+  "crypto": {
+    "bitcoin": { "priceJan1": 93500.25, "year": 2026 }
+  }
+}

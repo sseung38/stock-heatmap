@@ -1,0 +1,8 @@
+{
+  "asOf": "2026-09-27T10:09:41Z",
+  "sp500": [
+    { "symbol": "AAPL", "name": "Apple Inc.", "sector": "Information Technology" },
+    { "symbol": "BRK.B", "name": "Berkshire Hathaway", "sector": "Financials" }
+  ],
+  "sharesOutstanding": { "AAPL": 14840000000.0, "BRK.B": 1310000000.0 }
+}

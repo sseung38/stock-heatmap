@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.data/
+cdk.out/
+cdk-outputs.json
+web/config.remote.json
+backend/**/build/
+backend/.gradle/
+.gradle/
+.superpowers/
+.DS_Store
