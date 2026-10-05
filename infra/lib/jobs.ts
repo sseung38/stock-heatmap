@@ -15,6 +15,8 @@ export interface JobsProps {
 export class Jobs extends Construct {
   readonly stocks: SpringFunction;
   readonly crypto: SpringFunction;
+  readonly baselines: SpringFunction;
+  readonly metadata: SpringFunction;
 
   constructor(scope: Construct, id: string, props: JobsProps) {
     super(scope, id);
@@ -44,6 +46,26 @@ export class Jobs extends Construct {
     table.grantReadData(this.crypto.fn);
     grantSecrets(this.crypto.fn, stack, ["coingeckoKey"]);
     this.scheduleRate("Crypto", this.crypto, Duration.minutes(15));
+
+    // --- baselines: once a day after the close (30 daily closes + Dec 31 closes) ---
+    this.baselines = makeSpringFunction(this, "RefreshBaselines", {
+      name: "refresh-baselines", functionBean: "refreshBaselines", timeout: Duration.seconds(300), codePath: props.codePath, environment,
+    });
+    dataBucket.grantPut(this.baselines.fn, "baselines.json");
+    for (const key of ["baselines.json", "metadata.json", "crypto.json"]) dataBucket.grantRead(this.baselines.fn, key);
+    table.grantReadData(this.baselines.fn);
+    grantSecrets(this.baselines.fn, stack, ["alpacaKeyId", "alpacaSecret", "coingeckoKey"]);
+    this.schedule("Baselines", this.baselines, { minute: "0", hour: "17" });
+
+    // --- metadata: weekly; S&P list + shares outstanding (Finnhub, paced) + symbol lists ---
+    this.metadata = makeSpringFunction(this, "RefreshMetadata", {
+      name: "refresh-metadata", functionBean: "refreshMetadata", timeout: Duration.seconds(840), codePath: props.codePath, environment,
+    });
+    dataBucket.grantPut(this.metadata.fn, "metadata.json");
+    dataBucket.grantPut(this.metadata.fn, "symbols.json");
+    dataBucket.grantRead(this.metadata.fn, "metadata.json");
+    grantSecrets(this.metadata.fn, stack, ["alpacaKeyId", "alpacaSecret", "finnhubKey", "coingeckoKey"]);
+    this.schedule("Metadata", this.metadata, { minute: "0", hour: "6", weekDay: "SUN" });
   }
 
   protected schedule(id: string, target: SpringFunction, cron: { minute: string; hour: string; weekDay?: string }) {

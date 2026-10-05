@@ -27,7 +27,12 @@ describe("data resources", () => {
 
 describe("refresh Lambdas", () => {
   it("run the Spring Cloud Function handler on Java 21 / arm64 with SnapStart", () => {
-    for (const [name, bean] of [["stock-heatmap-refresh-stocks", "refreshStocks"], ["stock-heatmap-refresh-crypto", "refreshCrypto"]]) {
+    for (const [name, bean] of [
+      ["stock-heatmap-refresh-stocks", "refreshStocks"],
+      ["stock-heatmap-refresh-crypto", "refreshCrypto"],
+      ["stock-heatmap-refresh-baselines", "refreshBaselines"],
+      ["stock-heatmap-refresh-metadata", "refreshMetadata"],
+    ]) {
       template.hasResourceProperties("AWS::Lambda::Function", {
         FunctionName: name,
         Runtime: "java21",
@@ -44,7 +49,12 @@ describe("refresh Lambdas", () => {
         },
       });
     }
-    template.resourcePropertiesCountIs("AWS::Lambda::Alias", { Name: "live" }, 2);
+    template.resourcePropertiesCountIs("AWS::Lambda::Alias", { Name: "live" }, 4);
+  });
+
+  it("give the slow jobs enough time (metadata paces Finnhub at 55 calls/min)", () => {
+    template.hasResourceProperties("AWS::Lambda::Function", { FunctionName: "stock-heatmap-refresh-baselines", Timeout: 300 });
+    template.hasResourceProperties("AWS::Lambda::Function", { FunctionName: "stock-heatmap-refresh-metadata", Timeout: 840 });
   });
 
   it("keep logs for 14 days and never retry a failed scheduled run", () => {
@@ -57,6 +67,8 @@ describe("refresh Lambdas", () => {
     const expressions = Object.values(schedules).map((s) => s.Properties.ScheduleExpression).sort();
 
     expect(expressions).toEqual([
+      "cron(0 17 ? * MON-FRI *)",
+      "cron(0 6 ? * SUN *)",
       "cron(0-20/5 16 ? * MON-FRI *)",
       "cron(0/5 10-15 ? * MON-FRI *)",
       "cron(30-55/5 9 ? * MON-FRI *)",
@@ -104,5 +116,30 @@ describe("least privilege (spec §5.4)", () => {
 
     expect(actions.some((a) => a.startsWith("dynamodb:Scan"))).toBe(true);
     expect(actions.some((a) => a.startsWith("dynamodb:PutItem"))).toBe(false);
+  });
+
+  it("lets refresh-baselines write only baselines.json and read crypto.json for the coin list", () => {
+    const statements = statementsFor(template, "stock-heatmap-refresh-baselines");
+    const writes = JSON.stringify(statements.filter((s) => actionsOf(s).some((a) => a.startsWith("s3:PutObject"))).map((s) => s.Resource));
+    const reads = JSON.stringify(statements.filter((s) => actionsOf(s).includes("s3:GetObject*")).map((s) => s.Resource));
+    const params = JSON.stringify(statements.filter((s) => actionsOf(s).includes("ssm:GetParameter")).map((s) => s.Resource));
+
+    expect(writes).toContain("/baselines.json");
+    expect(writes).not.toMatch(/stocks|crypto|metadata/);
+    expect(reads).toContain("/crypto.json");
+    expect(reads).toContain("/metadata.json");
+    expect(params).not.toContain("finnhub");
+  });
+
+  it("gives refresh-metadata all four keys but no table access", () => {
+    const statements = statementsFor(template, "stock-heatmap-refresh-metadata");
+    const actions = statements.flatMap(actionsOf);
+    const writes = JSON.stringify(statements.filter((s) => actionsOf(s).some((a) => a.startsWith("s3:PutObject"))).map((s) => s.Resource));
+    const params = JSON.stringify(statements.filter((s) => actionsOf(s).includes("ssm:GetParameter")).map((s) => s.Resource));
+
+    expect(actions.some((a) => a.startsWith("dynamodb:"))).toBe(false);
+    expect(writes).toContain("/metadata.json");
+    expect(writes).toContain("/symbols.json");
+    for (const key of ["alpaca-key-id", "alpaca-secret", "finnhub-key", "coingecko-key"]) expect(params).toContain(key);
   });
 });
