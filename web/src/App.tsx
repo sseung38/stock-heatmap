@@ -1,6 +1,7 @@
 import { etDate, TIMEFRAMES, type MarketData, type Timeframe } from "@sh/shared";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMarketData } from "./api/useMarketData";
+import { useCryptoStream } from "./crypto/useCryptoStream";
 import { TileDetail } from "./detail/TileDetail";
 import { buildTiles, type Tile, type View } from "./heatmap/buildTiles";
 import { Heatmap } from "./heatmap/Heatmap";
@@ -20,8 +21,15 @@ export default function App() {
   const [tf, setTf] = useState<Timeframe>("1D");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Stream every coin that has a Coinbase product; the joined key keeps the socket open across polls.
+  const productIds = useMemo(
+    () => Object.values(data?.crypto?.coins ?? {}).flatMap((c) => (c.coinbaseProductId ? [c.coinbaseProductId] : [])).sort(),
+    [data?.crypto],
+  );
+  const stream = useCryptoStream(productIds);
+
   const year = Number(etDate(new Date().toISOString()).slice(0, 4));
-  const tiles: Tile[] = data ? buildTiles(view, data, {}, [], tf, year) : [];
+  const tiles: Tile[] = data ? buildTiles(view, data, stream.prices, [], tf, year) : [];
   const selected = tiles.find((t) => t.id === selectedId) ?? null;
 
   return (
@@ -43,7 +51,7 @@ export default function App() {
         </div>
         <button className="edit-list">Edit list</button>
       </header>
-      <StatusBar stocks={data?.stocks ?? null} isError={isError} />
+      <StatusBar stocks={data?.stocks ?? null} crypto={productIds.length > 0 ? stream.status : null} isError={isError} />
       <main>
         {!data && <p className="empty">Loading…</p>}
         {data && isEmpty(data) && <p className="empty">Waiting for first data refresh</p>}

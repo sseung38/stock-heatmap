@@ -1,7 +1,9 @@
 import { formatEtTime, type StocksFile } from "@sh/shared";
+import type { StreamStatus } from "../crypto/useCryptoStream";
 import { stockStatus } from "./marketStatus";
 
-export function StatusBar({ stocks, isError }: { stocks: StocksFile | null; isError: boolean }) {
+/** @param crypto live-stream status, or null when there are no coins to stream */
+export function StatusBar({ stocks, crypto, isError }: { stocks: StocksFile | null; crypto: StreamStatus | null; isError: boolean }) {
   const status = stockStatus(stocks, new Date());
   return (
     <div className="status-bar">
@@ -10,6 +12,8 @@ export function StatusBar({ stocks, isError }: { stocks: StocksFile | null; isEr
       {status.kind === "delayed" && (
         <span className="banner-delayed" role="status">Stock data delayed since {formatEtTime(status.since)}</span>
       )}
+      {crypto === "live" && <span className="crypto-live">Crypto live ●</span>}
+      {crypto === "reconnecting" && <span>Reconnecting…</span>}
       {isError && <span className="retrying">Retrying…</span>}
     </div>
   );
