@@ -1,0 +1,112 @@
+[
+ {
+  "id": "b6d1aa75-5c9c-4353-a305-9e2caa1925ab",
+  "class": "us_equity",
+  "exchange": "NASDAQ",
+  "symbol": "MSFT",
+  "name": "Microsoft Corporation Common Stock",
+  "status": "active",
+  "tradable": true,
+  "marginable": true,
+  "maintenance_margin_requirement": 30,
+  "margin_requirement_long": "30",
+  "margin_requirement_short": "30",
+  "shortable": true,
+  "easy_to_borrow": true,
+  "borrow_status": "easy_to_borrow",
+  "fractionable": true,
+  "attributes": [
+   "fractional_eh_enabled",
+   "has_options",
+   "overnight_tradable"
+  ]
+ },
+ {
+  "id": "80e04a93-e1a8-4503-ab61-2ef1992650b4",
+  "class": "us_equity",
+  "exchange": "NASDAQ",
+  "symbol": "PLTR",
+  "name": "Palantir Technologies Inc. Class A Common Stock",
+  "status": "active",
+  "tradable": true,
+  "marginable": true,
+  "maintenance_margin_requirement": 30,
+  "margin_requirement_long": "30",
+  "margin_requirement_short": "30",
+  "shortable": true,
+  "easy_to_borrow": true,
+  "borrow_status": "easy_to_borrow",
+  "fractionable": true,
+  "attributes": [
+   "fractional_eh_enabled",
+   "has_options",
+   "overnight_tradable"
+  ]
+ },
+ {
+  "id": "71bb19d0-6c5f-4881-9552-33224badd810",
+  "class": "us_equity",
+  "exchange": "NYSE",
+  "symbol": "BRK.B",
+  "name": "BERKSHIRE HATHAWAY Class B",
+  "status": "active",
+  "tradable": true,
+  "marginable": true,
+  "maintenance_margin_requirement": 30,
+  "margin_requirement_long": "30",
+  "margin_requirement_short": "30",
+  "shortable": true,
+  "easy_to_borrow": true,
+  "borrow_status": "easy_to_borrow",
+  "fractionable": true,
+  "attributes": [
+   "fractional_eh_enabled",
+   "has_options",
+   "overnight_tradable"
+  ]
+ },
+ {
+  "id": "4ce9353c-66d1-46c2-898f-fce867ab0247",
+  "class": "us_equity",
+  "exchange": "NASDAQ",
+  "symbol": "NVDA",
+  "name": "NVIDIA Corporation Common Stock",
+  "status": "active",
+  "tradable": true,
+  "marginable": true,
+  "maintenance_margin_requirement": 30,
+  "margin_requirement_long": "30",
+  "margin_requirement_short": "30",
+  "shortable": true,
+  "easy_to_borrow": true,
+  "borrow_status": "easy_to_borrow",
+  "fractionable": true,
+  "attributes": [
+   "fractional_eh_enabled",
+   "has_options",
+   "overnight_tradable"
+  ]
+ },
+ {
+  "id": "b0b6dd9d-8b9b-48a9-ba46-b9d54906e415",
+  "class": "us_equity",
+  "exchange": "NASDAQ",
+  "symbol": "AAPL",
+  "name": "Apple Inc. Common Stock",
+  "status": "active",
+  "tradable": true,
+  "marginable": true,
+  "maintenance_margin_requirement": 30,
+  "margin_requirement_long": "30",
+  "margin_requirement_short": "30",
+  "shortable": true,
+  "easy_to_borrow": true,
+  "borrow_status": "easy_to_borrow",
+  "fractionable": true,
+  "attributes": [
+   "fractional_eh_enabled",
+   "has_options",
+   "overnight_tradable"
+  ]
+ }
+]
