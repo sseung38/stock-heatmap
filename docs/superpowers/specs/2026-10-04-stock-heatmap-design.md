@@ -1,7 +1,7 @@
 # Stock Heatmap — Design Spec
 
 - **Date:** 2026-10-04
-- **Status:** Approved design, pending spec review
+- **Status:** Approved (see §14 for changes made during planning)
 - **Owner:** sseung385
 
 ## 1. Purpose and success criteria
@@ -280,7 +280,7 @@ npm workspaces; TypeScript everywhere.
 - **Branch protection** on `main`: CI must pass before merging.
 - **One-time bootstrap from the Mac**: `cdk bootstrap`; deploy the OIDC role stack;
   store data-API keys in SSM; create the Cognito user.
-- Private GitHub repo; expected Actions usage ~100 of 2,000 free minutes/month.
+- Public GitHub repo (branch protection is not available for private repos on GitHub Free; no secrets are ever committed); Actions minutes are free for public repos.
 
 ## 11. Cost
 
@@ -327,3 +327,25 @@ Each step introduces one main concept and ends with something working:
 8. CloudFront + site bucket (hosted app).
 9. Monitoring, alarms, budget.
 10. CI workflow; then OIDC role + CD workflow + branch protection.
+
+## 14. Changes made during planning (2026-10-04)
+
+These supersede the sections above where they conflict.
+
+1. **`refresh-quotes` is two Lambdas:** `refresh-stocks` (5-min stock schedule) and
+   `refresh-crypto` (15-min schedule). Each has its own failure alarm (3 consecutive
+   failed runs) and only the permissions for its own file.
+2. **No market-closed skip.** Alpaca has no monthly quota, so `refresh-stocks` always
+   fetches. It records `/v2/clock` in `stocks.json` as `market: { isOpen }`, which the
+   UI uses for the "Market closed" state.
+3. **Stock quote and baseline shapes:**
+   - `stocks.json` → `{ asOf, market: { isOpen }, quotes: { [symbol]: { price, prevClose, volume, tradingDay, asOf } } }`
+     (`tradingDay` = ET date of the snapshot's daily bar).
+   - `baselines.json` stocks → `{ [symbol]: { closes: number[] /* last 30 sessions */, lastCloseDate, yearEndCloses: { [year]: close } } }`.
+   - The browser picks the baseline relative to the quote's `tradingDay`: 1W = close 5
+     sessions before it, 1M = 21 sessions before, YTD = `yearEndCloses[year − 1]`.
+     This keeps 1W/1M exact on the day after a baseline run and YTD correct in early January.
+   - Daily bars are requested split-adjusted (`adjustment=split`).
+4. **IAM:** `refresh-baselines` may also `GetObject` `crypto.json` (source of coin ids).
+5. **Runtime web config:** CDK writes `/config.json` (API URL, Cognito authority and
+   client id) next to the site, so one web build works for every environment.
