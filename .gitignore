@@ -10,3 +10,4 @@ backend/.gradle/
 .gradle/
 .superpowers/
 .DS_Store
+.archify/
