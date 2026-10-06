@@ -13,7 +13,7 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Builds HTTP API responses. API Gateway does not compress, so we gzip ourselves when the browser
- * accepts it: market data shrinks from ~400 KB to well under 100 KB. Binary bodies must be base64
+ * accepts it: market data shrinks from ~450 KB to ~150 KB. Binary bodies must be base64
  * encoded in the Lambda response, with isBase64Encoded telling API Gateway to decode them.
  */
 final class ApiResponses {
