@@ -7,6 +7,7 @@
     "lint": "eslint .",
     "test": "npm test --workspaces --if-present",
     "dev": "concurrently -n api,web -c blue,green \"npm run api:local\" \"npm run dev -w web\"",
+    "dev:remote": "jq -r '.StockHeatmapStack.WebConfig' cdk-outputs.json > web/config.remote.json && concurrently -n api,web -c blue,green \"cd backend && ./gradlew :local:bootRun --args=--heatmap.config-file=web/config.remote.json\" \"npm run dev -w web\"",
     "api:local": "cd backend && ./gradlew :local:bootRun",
     "refresh": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --refresh=${JOB:-all}\"",
     "smoke": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --smoke\"",

@@ -1,6 +1,7 @@
 import { CfnOutput, Stack, type StackProps } from "aws-cdk-lib";
 import type { Construct } from "constructs";
 import { fileURLToPath } from "node:url";
+import { Api } from "./api";
 import { DataResources } from "./data";
 import { Jobs } from "./jobs";
 import { Monitoring } from "./monitoring";
@@ -23,6 +24,7 @@ export class StockHeatmapStack extends Stack {
 
     const data = new DataResources(this, "Data");
     new Jobs(this, "Jobs", { data, codePath });
+    new Api(this, "Api", { data, codePath, siteUrls: ["http://localhost:5173"] });
     new Monitoring(this, "Monitoring", { alertEmail: props.alertEmail });
 
     new CfnOutput(this, "DataBucketName", { value: data.dataBucket.bucketName });

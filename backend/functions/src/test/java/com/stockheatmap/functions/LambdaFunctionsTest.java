@@ -3,19 +3,35 @@ package com.stockheatmap.functions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
+import com.stockheatmap.core.model.MarketData;
+import com.stockheatmap.core.model.MetadataFile;
+import com.stockheatmap.core.model.Sp500Entry;
+import com.stockheatmap.jobs.MarketDataService;
 import com.stockheatmap.jobs.RefreshBaselinesJob;
 import com.stockheatmap.jobs.RefreshCryptoJob;
 import com.stockheatmap.jobs.RefreshMetadataJob;
 import com.stockheatmap.jobs.RefreshStocksJob;
 import com.stockheatmap.jobs.RefreshSummary;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.cloud.function.context.FunctionCatalog;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Boots the real Lambda application context (without the "aws" profile, so no AWS clients) and
@@ -24,7 +40,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  */
 @SpringBootTest(classes = FunctionsApplication.class)
 @ActiveProfiles("test")
+@Import(LambdaFunctionsTest.Mapper.class)
 class LambdaFunctionsTest {
+
+  /** On Lambda the mapper comes from JobsConfiguration (aws profile, see AwsProfileContextTest). */
+  @TestConfiguration
+  static class Mapper {
+    @Bean
+    JsonMapper testJsonMapper() {
+      return JsonMapper.builder().build();
+    }
+  }
 
   @Autowired private FunctionCatalog catalog;
 
@@ -32,6 +58,11 @@ class LambdaFunctionsTest {
   @MockitoBean private RefreshCryptoJob crypto;
   @MockitoBean private RefreshBaselinesJob baselines;
   @MockitoBean private RefreshMetadataJob metadata;
+  @MockitoBean private MarketDataService marketData;
+  @Autowired private JsonMapper mapper;
+
+  private static final MarketData DATA = new MarketData(null, null, null,
+      new MetadataFile("2026-10-04T06:00:00Z", List.of(new Sp500Entry("AAPL", "Apple Inc.", "Information Technology")), Map.of()));
 
   private RefreshSummary invoke(String name) {
     Function<Map<String, Object>, RefreshSummary> function = catalog.lookup(name);
@@ -49,5 +80,40 @@ class LambdaFunctionsTest {
     assertThat(invoke("refreshCrypto").file()).isEqualTo("crypto.json");
     assertThat(invoke("refreshBaselines").file()).isEqualTo("baselines.json");
     assertThat(invoke("refreshMetadata").file()).isEqualTo("metadata.json");
+  }
+
+  private APIGatewayV2HTTPResponse getMarketData(Map<String, String> headers) {
+    Function<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> function = catalog.lookup("getMarketData");
+    return function.apply(APIGatewayV2HTTPEvent.builder().withHeaders(headers).build());
+  }
+
+  @Test
+  void getMarketDataGzipsWhenTheBrowserAcceptsIt() throws IOException {
+    when(marketData.load()).thenReturn(DATA);
+
+    APIGatewayV2HTTPResponse response = getMarketData(Map.of("accept-encoding", "gzip, deflate, br"));
+
+    assertThat(response.getStatusCode()).isEqualTo(200);
+    assertThat(response.getIsBase64Encoded()).isTrue();
+    assertThat(response.getHeaders())
+        .containsEntry("content-type", "application/json")
+        .containsEntry("content-encoding", "gzip")
+        .containsEntry("cache-control", "private, max-age=30");
+    byte[] gzipped = Base64.getDecoder().decode(response.getBody());
+    try (var in = new GZIPInputStream(new ByteArrayInputStream(gzipped))) {
+      assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8)).isEqualTo(mapper.writeValueAsString(DATA));
+    }
+  }
+
+  @Test
+  void getMarketDataSendsPlainJsonOtherwise() {
+    when(marketData.load()).thenReturn(DATA);
+
+    APIGatewayV2HTTPResponse response = getMarketData(null);
+
+    assertThat(response.getStatusCode()).isEqualTo(200);
+    assertThat(response.getIsBase64Encoded()).isFalse();
+    assertThat(response.getHeaders()).doesNotContainKey("content-encoding");
+    assertThat(response.getBody()).isEqualTo(mapper.writeValueAsString(DATA));
   }
 }

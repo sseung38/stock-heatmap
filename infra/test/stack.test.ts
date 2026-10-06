@@ -49,7 +49,7 @@ describe("refresh Lambdas", () => {
         },
       });
     }
-    template.resourcePropertiesCountIs("AWS::Lambda::Alias", { Name: "live" }, 4);
+    template.resourcePropertiesCountIs("AWS::Lambda::Alias", { Name: "live" }, 5); // 4 jobs + get-market-data
   });
 
   it("give the slow jobs enough time (metadata paces Finnhub at 55 calls/min)", () => {

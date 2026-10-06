@@ -144,3 +144,11 @@ footer {
 .crypto-live {
   color: #30a46c;
 }
+
+.auth-message {
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  min-height: 100vh;
+  text-align: center;
+}
