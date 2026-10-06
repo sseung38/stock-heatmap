@@ -66,4 +66,28 @@ describe("HTTP API", () => {
     const outputs = template.toJSON().Outputs as Record<string, unknown>;
     expect(Object.keys(outputs)).toEqual(expect.arrayContaining(["ApiUrl", "WebConfig", "CreateUserCommand"]));
   });
+
+  it("requires a JWT on GET and PUT /watchlist", () => {
+    for (const routeKey of ["GET /watchlist", "PUT /watchlist"]) {
+      template.hasResourceProperties("AWS::ApiGatewayV2::Route", { RouteKey: routeKey, AuthorizationType: "JWT" });
+    }
+    template.hasResourceProperties("AWS::Lambda::Function", {
+      FunctionName: "stock-heatmap-watchlist",
+      Timeout: 10,
+      Environment: { Variables: Match.objectLike({ spring_cloud_function_definition: "watchlist" }) },
+    });
+  });
+
+  it("lets the watchlist function write the table and read only symbols.json", () => {
+    const statements = statementsFor(template, "stock-heatmap-watchlist");
+    const actions = statements.flatMap(actionsOf);
+    const s3 = statements.filter((s) => actionsOf(s).some((a) => a.startsWith("s3:")));
+    const s3Resources = JSON.stringify(s3.map((s) => s.Resource));
+
+    expect(actions).toContain("dynamodb:PutItem");
+    expect(actions.some((a) => a.startsWith("s3:Put"))).toBe(false);
+    expect(s3Resources).toContain("/symbols.json");
+    for (const key of ["stocks.json", "crypto.json", "baselines.json", "metadata.json"]) expect(s3Resources).not.toContain(key);
+    expect(actions.some((a) => a.startsWith("ssm:"))).toBe(false);
+  });
 });

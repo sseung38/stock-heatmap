@@ -24,6 +24,7 @@ export class Api extends Construct {
   readonly userPool: cognito.UserPool;
   readonly client: cognito.UserPoolClient;
   readonly marketData: SpringFunction;
+  readonly watchlist: SpringFunction;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
@@ -77,6 +78,15 @@ export class Api extends Construct {
     });
     for (const key of ["stocks.json", "crypto.json", "baselines.json", "metadata.json"]) dataBucket.grantRead(this.marketData.fn, key);
     this.route("/market-data", apigw.HttpMethod.GET, this.marketData);
+
+    // Each user's list, keyed by their Cognito "sub"; symbols.json validates new items.
+    this.watchlist = makeSpringFunction(this, "Watchlist", {
+      name: "watchlist", functionBean: "watchlist", timeout: Duration.seconds(10), codePath: props.codePath, environment,
+    });
+    table.grantReadWriteData(this.watchlist.fn);
+    dataBucket.grantRead(this.watchlist.fn, "symbols.json");
+    this.route("/watchlist", apigw.HttpMethod.GET, this.watchlist);
+    this.route("/watchlist", apigw.HttpMethod.PUT, this.watchlist);
 
     new CfnOutput(stack, "ApiUrl", { value: this.httpApi.apiEndpoint });
     new CfnOutput(stack, "WebConfig", {

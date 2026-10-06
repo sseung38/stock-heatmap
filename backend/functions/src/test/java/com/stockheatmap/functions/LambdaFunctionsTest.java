@@ -1,6 +1,7 @@
 package com.stockheatmap.functions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
@@ -8,7 +9,12 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 import com.stockheatmap.core.model.MarketData;
 import com.stockheatmap.core.model.MetadataFile;
 import com.stockheatmap.core.model.Sp500Entry;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext.Authorizer;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent.RequestContext.Http;
+import com.stockheatmap.jobs.ApiResult;
 import com.stockheatmap.jobs.MarketDataService;
+import com.stockheatmap.jobs.WatchlistService;
 import com.stockheatmap.jobs.RefreshBaselinesJob;
 import com.stockheatmap.jobs.RefreshCryptoJob;
 import com.stockheatmap.jobs.RefreshMetadataJob;
@@ -59,6 +65,7 @@ class LambdaFunctionsTest {
   @MockitoBean private RefreshBaselinesJob baselines;
   @MockitoBean private RefreshMetadataJob metadata;
   @MockitoBean private MarketDataService marketData;
+  @MockitoBean private WatchlistService watchlist;
   @Autowired private JsonMapper mapper;
 
   private static final MarketData DATA = new MarketData(null, null, null,
@@ -115,5 +122,45 @@ class LambdaFunctionsTest {
     assertThat(response.getIsBase64Encoded()).isFalse();
     assertThat(response.getHeaders()).doesNotContainKey("content-encoding");
     assertThat(response.getBody()).isEqualTo(mapper.writeValueAsString(DATA));
+  }
+
+  private static APIGatewayV2HTTPEvent watchlistEvent(String method, String sub, String body, boolean base64) {
+    return APIGatewayV2HTTPEvent.builder()
+        .withRequestContext(RequestContext.builder()
+            .withHttp(Http.builder().withMethod(method).build())
+            .withAuthorizer(Authorizer.builder().withJwt(Authorizer.JWT.builder().withClaims(Map.of("sub", sub)).build()).build())
+            .build())
+        .withBody(body)
+        .withIsBase64Encoded(base64)
+        .build();
+  }
+
+  private APIGatewayV2HTTPResponse callWatchlist(APIGatewayV2HTTPEvent event) {
+    Function<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> function = catalog.lookup("watchlist");
+    return function.apply(event);
+  }
+
+  @Test
+  void watchlistActsAsTheSignedInUser() {
+    String body = "{\"items\":[{\"type\":\"stock\",\"symbol\":\"PLTR\"}]}";
+    when(watchlist.handle("PUT", "u1", body)).thenReturn(new ApiResult(400, Map.of("error", "Unknown or duplicate items")));
+
+    APIGatewayV2HTTPResponse response = callWatchlist(watchlistEvent("PUT", "u1", body, false));
+
+    verify(watchlist).handle("PUT", "u1", body);
+    assertThat(response.getStatusCode()).isEqualTo(400);
+    assertThat(response.getBody()).contains("Unknown or duplicate items");
+  }
+
+  @Test
+  void watchlistDecodesBase64Bodies() {
+    String body = "{\"items\":[]}";
+    String encoded = Base64.getEncoder().encodeToString(body.getBytes(StandardCharsets.UTF_8));
+    when(watchlist.handle("PUT", "u1", body)).thenReturn(new ApiResult(200, Map.of("items", List.of())));
+
+    APIGatewayV2HTTPResponse response = callWatchlist(watchlistEvent("PUT", "u1", encoded, true));
+
+    verify(watchlist).handle("PUT", "u1", body);
+    assertThat(response.getStatusCode()).isEqualTo(200);
   }
 }

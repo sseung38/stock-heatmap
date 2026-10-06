@@ -61,3 +61,23 @@ it("explains the empty state before the first refresh", async () => {
 
   expect(await screen.findByText("Waiting for first data refresh")).toBeTruthy();
 });
+
+it("shows the saved watchlist in the Watchlist tab", async () => {
+  renderApp(data, { items: [{ type: "stock", symbol: "AAPL" }], updatedAt: "" });
+  await screen.findByRole("button", { name: "AAPL +10.00%" });
+
+  fireEvent.click(screen.getByRole("button", { name: "Watchlist" }));
+
+  expect(await screen.findByRole("button", { name: "AAPL +10.00%" })).toBeTruthy();
+});
+
+it("explains an empty watchlist and opens the editor", async () => {
+  renderApp(data);
+  await screen.findByRole("button", { name: "AAPL +10.00%" });
+
+  fireEvent.click(screen.getByRole("button", { name: "Watchlist" }));
+  expect(await screen.findByText(/Your watchlist is empty/)).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit list" }));
+  expect(screen.getByRole("dialog", { name: "Edit watchlist" })).toBeTruthy();
+});

@@ -34,7 +34,7 @@ class AwsProfileContextTest {
   void wiresAwsAdaptersAndEveryFunction() {
     assertThat(dataStore).isInstanceOf(S3DataStore.class);
     assertThat(secrets).isNotNull();
-    for (String name : new String[] {"refreshStocks", "refreshCrypto", "refreshBaselines", "refreshMetadata", "getMarketData"}) {
+    for (String name : new String[] {"refreshStocks", "refreshCrypto", "refreshBaselines", "refreshMetadata", "getMarketData", "watchlist"}) {
       assertThat((Object) catalog.lookup(name)).as(name).isNotNull();
     }
   }
