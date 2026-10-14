@@ -44,3 +44,44 @@ jobs:
         env:
           ALERT_EMAIL: ci@example.invalid
         run: npx cdk synth -q
+
+  # Pushes to main deploy, after ci passes. GitHub's OIDC token is exchanged for a short-lived
+  # AWS role (GithubOidcStack), so no AWS keys are stored in GitHub.
+  deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy # never two deploys at once
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - run: npm ci
+
+      - name: Deploy
+        env:
+          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+        # No terminal to approve IAM changes in CI; those changes were reviewed in the pull request.
+        run: npm run deploy -- --require-approval never
+
+      - name: Post-deploy check
+        run: scripts/post-deploy-check.sh cdk-outputs.json
