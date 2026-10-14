@@ -18,7 +18,7 @@ export interface StockHeatmapStackProps extends StackProps {
   codePath?: string;
   /** Built web app (npm run build -w web); tests pass a fixture folder. */
   webDistPath?: string;
-  /** Where cost (and, from Task 21, failure) alerts are emailed. */
+  /** Where cost and failure alerts are emailed. */
   alertEmail: string;
 }
 
@@ -28,12 +28,15 @@ export class StockHeatmapStack extends Stack {
     const codePath = props.codePath ?? DEFAULT_CODE_PATH;
 
     const data = new DataResources(this, "Data");
-    new Jobs(this, "Jobs", { data, codePath });
+    const jobs = new Jobs(this, "Jobs", { data, codePath });
     // The site's address must exist before Cognito and CORS can allow it; config.json then needs the API's values.
     const site = new Site(this, "Site", { webDistPath: props.webDistPath ?? DEFAULT_WEB_DIST_PATH });
     const api = new Api(this, "Api", { data, codePath, siteUrls: [site.url, "http://localhost:5173"] });
     site.deploy(api.webConfig);
-    new Monitoring(this, "Monitoring", { alertEmail: props.alertEmail });
+    new Monitoring(this, "Monitoring", {
+      functions: { stocks: jobs.stocks, crypto: jobs.crypto, baselines: jobs.baselines, metadata: jobs.metadata },
+      alertEmail: props.alertEmail,
+    });
 
     new CfnOutput(this, "DataBucketName", { value: data.dataBucket.bucketName });
   }
