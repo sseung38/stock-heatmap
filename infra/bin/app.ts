@@ -12,6 +12,7 @@ const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: "us-east-1" };
 
 new StockHeatmapStack(app, "StockHeatmapStack", { env, alertEmail });
 
-// One-time setup, deployed by hand: cdk deploy StockHeatmapGithubOidc -c githubRepo=<owner>/<name>
-const githubRepo = app.node.tryGetContext("githubRepo") as string | undefined;
-if (githubRepo) new GithubOidcStack(app, "StockHeatmapGithubOidc", { env, repo: githubRepo });
+// One-time setup, deployed by hand:
+//   cdk deploy StockHeatmapGithubOidc -c githubSubjectPrefix=$(gh api repos/<owner>/<name>/actions/oidc/customization/sub -q .sub_claim_prefix)
+const subjectPrefix = app.node.tryGetContext("githubSubjectPrefix") as string | undefined;
+if (subjectPrefix) new GithubOidcStack(app, "StockHeatmapGithubOidc", { env, subjectPrefix });
