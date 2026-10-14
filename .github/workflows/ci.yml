@@ -1,0 +1,46 @@
+# Every push and pull request: Java tests + Lambda zip, TypeScript checks and tests,
+# web build, and a CDK synth. No AWS credentials: nothing here can change the account.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Java tests + Lambda zip
+        run: npm run build:backend
+
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      - name: Build web app
+        run: npm run build -w web
+
+      - name: CDK synth
+        working-directory: infra
+        env:
+          ALERT_EMAIL: ci@example.invalid
+        run: npx cdk synth -q
