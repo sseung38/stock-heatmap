@@ -70,16 +70,18 @@ jobs:
           node-version: "22"
           cache: npm
 
+      # Secrets, not variables: this repo's workflow logs are public, and GitHub masks secrets.
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
+          mask-aws-account-id: true
 
       - run: npm ci
 
       - name: Deploy
         env:
-          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         # No terminal to approve IAM changes in CI; those changes were reviewed in the pull request.
         run: npm run deploy -- --require-approval never
 
