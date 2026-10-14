@@ -1,3 +1,4 @@
+import type { AppConfig } from "@sh/shared";
 import { CfnOutput, Duration, Stack } from "aws-cdk-lib";
 import * as apigw from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpJwtAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
@@ -25,6 +26,8 @@ export class Api extends Construct {
   readonly client: cognito.UserPoolClient;
   readonly marketData: SpringFunction;
   readonly watchlist: SpringFunction;
+  /** What the web app needs at runtime; published as the site's config.json. */
+  readonly webConfig: AppConfig;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
@@ -89,9 +92,8 @@ export class Api extends Construct {
     this.route("/watchlist", apigw.HttpMethod.PUT, this.watchlist);
 
     new CfnOutput(stack, "ApiUrl", { value: this.httpApi.apiEndpoint });
-    new CfnOutput(stack, "WebConfig", {
-      value: stack.toJsonString({ apiUrl: this.httpApi.apiEndpoint, auth: { authority: issuer, clientId: this.client.userPoolClientId } }),
-    });
+    this.webConfig = { apiUrl: this.httpApi.apiEndpoint, auth: { authority: issuer, clientId: this.client.userPoolClientId } };
+    new CfnOutput(stack, "WebConfig", { value: stack.toJsonString(this.webConfig) });
     new CfnOutput(stack, "CreateUserCommand", {
       value: `aws cognito-idp admin-create-user --user-pool-id ${this.userPool.userPoolId} --username <EMAIL> --user-attributes Name=email,Value=<EMAIL> Name=email_verified,Value=true`,
     });

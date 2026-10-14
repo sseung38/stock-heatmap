@@ -4,12 +4,14 @@ import { fileURLToPath } from "node:url";
 import { StockHeatmapStack } from "../lib/stack";
 
 export const FIXTURE_ZIP = fileURLToPath(new URL("./fixtures/lambda.zip", import.meta.url));
+export const FIXTURE_WEB_DIST = fileURLToPath(new URL("./fixtures/web-dist", import.meta.url));
 
 export function synth(): Template {
   const app = new App();
   const stack = new StockHeatmapStack(app, "TestStack", {
     env: { account: "123456789012", region: "us-east-1" },
     codePath: FIXTURE_ZIP,
+    webDistPath: FIXTURE_WEB_DIST,
     alertEmail: "alerts@example.com",
   });
   return Template.fromStack(stack);

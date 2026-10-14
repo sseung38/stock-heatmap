@@ -11,7 +11,8 @@
     "api:local": "cd backend && ./gradlew :local:bootRun",
     "refresh": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --refresh=${JOB:-all}\"",
     "smoke": "cd backend && ./gradlew :local:bootRun --args=\"--spring.main.web-application-type=none --smoke\"",
-    "build:backend": "cd backend && ./gradlew build :functions:lambdaZip"
+    "build:backend": "cd backend && ./gradlew build :functions:lambdaZip",
+    "deploy": "npm run build:backend && npm run build -w web && cd infra && npx cdk deploy StockHeatmapStack --outputs-file ../cdk-outputs.json"
   },
   "workspaces": [
     "shared",

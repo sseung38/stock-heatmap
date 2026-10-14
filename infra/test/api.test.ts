@@ -34,7 +34,7 @@ describe("HTTP API", () => {
 
   it("allows CORS only from the site", () => {
     template.hasResourceProperties("AWS::ApiGatewayV2::Api", {
-      CorsConfiguration: Match.objectLike({ AllowOrigins: ["http://localhost:5173"], AllowHeaders: ["authorization", "content-type"] }),
+      CorsConfiguration: Match.objectLike({ AllowOrigins: Match.arrayWith(["http://localhost:5173"]), AllowHeaders: ["authorization", "content-type"] }),
     });
   });
 
