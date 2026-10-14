@@ -4,7 +4,10 @@ import { expect, it } from "vitest";
 import { GithubOidcStack } from "../lib/github-oidc-stack";
 
 const template = Template.fromStack(
-  new GithubOidcStack(new App(), "TestOidc", { env: { account: "123456789012", region: "us-east-1" }, repo: "owner/stock-heatmap" }),
+  new GithubOidcStack(new App(), "TestOidc", {
+    env: { account: "123456789012", region: "us-east-1" },
+    subjectPrefix: "repo:owner@111/stock-heatmap@222",
+  }),
 );
 
 it("trusts only GitHub Actions runs on main of this repository", () => {
@@ -15,7 +18,7 @@ it("trusts only GitHub Actions runs on main of this repository", () => {
   expect(statement.Condition).toEqual({
     StringEquals: {
       "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-      "token.actions.githubusercontent.com:sub": "repo:owner/stock-heatmap:ref:refs/heads/main",
+      "token.actions.githubusercontent.com:sub": "repo:owner@111/stock-heatmap@222:ref:refs/heads/main",
     },
   });
   expect(role.Properties.RoleName).toBe("stock-heatmap-github-deploy");

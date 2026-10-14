@@ -3,8 +3,13 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import type { Construct } from "constructs";
 
 export interface GithubOidcStackProps extends StackProps {
-  /** "<owner>/<name>" of the GitHub repository allowed to deploy. */
-  repo: string;
+  /**
+   * The repository as GitHub writes it at the start of the token's "sub" claim. GitHub now uses
+   * immutable IDs ("repo:<owner>@<ownerId>/<name>@<repoId>"), so a repository deleted and
+   * re-created under the same name can't inherit this role. Get it with:
+   *   gh api repos/<owner>/<name>/actions/oidc/customization/sub -q .sub_claim_prefix
+   */
+  subjectPrefix: string;
 }
 
 const ISSUER = "token.actions.githubusercontent.com";
@@ -25,12 +30,12 @@ export class GithubOidcStack extends Stack {
 
     const role = new iam.Role(this, "DeployRole", {
       roleName: "stock-heatmap-github-deploy",
-      description: `GitHub Actions deploys from ${props.repo} main`,
+      description: `GitHub Actions deploys from main (${props.subjectPrefix})`,
       maxSessionDuration: Duration.hours(1),
       assumedBy: new iam.WebIdentityPrincipal(provider.oidcProviderArn, {
         StringEquals: {
           [`${ISSUER}:aud`]: "sts.amazonaws.com",
-          [`${ISSUER}:sub`]: `repo:${props.repo}:ref:refs/heads/main`,
+          [`${ISSUER}:sub`]: `${props.subjectPrefix}:ref:refs/heads/main`,
         },
       }),
     });
